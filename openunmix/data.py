@@ -500,7 +500,7 @@ class SourceFolderDataset(UnmixDataset):
         for source_folder in tqdm.tqdm(self.source_folders):
             tracks = []
             source_path = p / source_folder
-            for source_track_path in sorted(source_path.glob("*" + self.ext)):
+            for source_track_path in sorted(source_path.rglob("*.wav" + self.ext)):
                 if self.seq_duration is not None:
                     info = load_info(source_track_path)
                     # get minimum duration of track
