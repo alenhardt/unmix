@@ -207,11 +207,11 @@ def main():
     # torchaudio.set_audio_backend(args.audio_backend)
     use_cuda = not args.no_cuda and torch.cuda.is_available()
     print("Using GPU:", use_cuda)
-    dataloader_kwargs = {"num_workers": args.nb_workers, "pin_memory": True} if use_cuda else {}
+    dataloader_kwargs = {"num_workers": args.nb_workers, "pin_memory": False} if use_cuda else {}
 
-    repo_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-    repo = Repo(repo_dir)
-    commit = repo.head.commit.hexsha[:7]
+    # repo_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    # repo = Repo(repo_dir)
+    # commit = repo.head.commit.hexsha[:7]
 
     # use jpg or npy
     torch.manual_seed(args.seed)
@@ -352,7 +352,7 @@ def main():
             "valid_loss_history": valid_losses,
             "train_time_history": train_times,
             "num_bad_epochs": es.num_bad_epochs,
-            "commit": commit,
+            "commit": "-dev",
         }
 
         with open(Path(target_path, args.target + ".json"), "w") as outfile:
