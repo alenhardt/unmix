@@ -2,11 +2,26 @@ import argparse
 import random
 from pathlib import Path
 from typing import Optional, Union, Tuple, List, Any, Callable
+from functools import partial
 
 import torch
 import torch.utils.data
 import torchaudio
 import tqdm
+
+from multiprocessing import Pool
+
+
+def valid_min_length(src, min_dur):
+    info = load_info(src)
+    # get minimum duration of track
+    return info["duration"] > min_dur
+
+
+def pfilter(filter_func, arr, cores):
+    with Pool(cores) as p:
+        booleans = p.map(filter_func, arr)
+        return [x for x, b in zip(arr, booleans) if b]
 
 
 def load_info(path: str) -> dict:
@@ -471,6 +486,10 @@ class SourceFolderDataset(UnmixDataset):
                 random.seed(index)
 
             # select a random track for each source
+            if len(self.source_tracks[source]) < 1:
+                print(f"source folders: {self.source_folders}")
+                print(f"Source: {source}")
+                print(f"len source tracks: {len(self.source_tracks[source])}")
             source_path = random.choice(self.source_tracks[source])
             duration = load_info(source_path)["duration"]
             if self.random_chunks:
@@ -497,18 +516,25 @@ class SourceFolderDataset(UnmixDataset):
     def get_tracks(self):
         """Loads input and output tracks"""
         p = Path(self.root, self.split)
+        print(f"Source folders (get_tracks): {self.source_folders}")
         source_tracks = {}
         for source_folder in tqdm.tqdm(self.source_folders):
             tracks = []
             source_path = p / source_folder
-            for source_track_path in sorted(source_path.rglob("*.wav" + self.ext)):
-                if self.seq_duration is not None:
-                    info = load_info(source_track_path)
-                    # get minimum duration of track
-                    if info["duration"] > self.seq_duration:
-                        tracks.append(source_track_path)
-                else:
-                    tracks.append(source_track_path)
+            sorted_track_paths = sorted(source_path.rglob("*" + self.ext))
+            if self.seq_duration is not None:
+                tracks = pfilter(partial(valid_min_length, min_dur=self.seq_duration), sorted_track_paths, 20)
+            else:
+                tracks = sorted_track_paths
+
+            # for source_track_path in sorted(source_path.rglob("*" + self.ext)):
+            #     if self.seq_duration is not None:
+            #         info = load_info(source_track_path)
+            #         # get minimum duration of track
+            #         if info["duration"] > self.seq_duration:
+            #             tracks.append(source_track_path)
+            #     else:
+            #         tracks.append(source_track_path)
             source_tracks[source_folder] = tracks
         return source_tracks
 
