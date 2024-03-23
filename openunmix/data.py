@@ -458,6 +458,7 @@ class SourceFolderDataset(UnmixDataset):
         self.source_tracks = self.get_tracks()
         self.nb_samples = nb_samples
         self.seed = seed
+        print(f"Found {len(self.source_tracks)} tracks")
         random.seed(self.seed)
 
     def __getitem__(self, index):
